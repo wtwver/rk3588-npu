@@ -5,6 +5,15 @@ ninja -C build test
 Segmentation fault
 ```
 
+# Running llama.c
+```
+git clone https://github.com/karpathy/llama2.c
+wget https://huggingface.co/karpathy/tinyllamas/resolve/main/stories110M.bin
+cd llama2.c
+make run
+./run stories110M.bin
+```
+
 # rk3588-npu
 Reverse engineering the rk3588 npu.
 
