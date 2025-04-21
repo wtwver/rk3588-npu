@@ -96,17 +96,17 @@ int main(int argc, char **argv) {
   N = atoi(argv[3]);
 
   if ((M<=0) || (M>MAX_M) | (((M%4)!=0) && (M!=1))) {
-    printf("M [%d] is out of range or not a mutliple of 4 \n",M);
+    printf("M [%d] is out of range or not a multiple of 4 \n",M);
     return -1;
   }
 
   if ((K<=0) || (K>MAX_K) || ((K%32) != 0)) {
-    printf("K [%d] is out of range or not a mutliple of 32\n",K);
+    printf("K [%d] is out of range or not a multiple of 32\n",K);
     return -1;
   }
 
   if ((N<=0) || (N>MAX_N) || (((N%16) != 0) && (N!=1))) {
-    printf("N [%d] is out of range or not a mutliple of 16\n",N);
+    printf("N [%d] is out of range or not a multiple of 16\n",N);
     return -1;
   }
 
