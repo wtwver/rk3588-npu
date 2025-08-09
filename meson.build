@@ -1,6 +1,6 @@
 project('rk3588-npu', 'c')
 incdir = include_directories('include')
-lib_src = ['src/npu_interface.c','src/npu_matmul.c']
+lib_src = ['src/npu_interface.c','src/npu_matmul.c','src/npu_conv.c']
 lib = library('rk3588-npu',lib_src, include_directories : incdir)
 
 
@@ -31,3 +31,7 @@ test('matmul fp16_fp16 1x32x16',test_matmul_fp16_fp16, is_parallel : false , arg
 test('matmul fp16_fp16 1x768x768',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '768' ,'768'])
 test('matmul fp16_fp16 1x768x2048',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '768' ,'2048'])
 test('matmul fp16_fp16 1x8192x8192',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '8192' ,'8192'])
+
+# Conv2d 1x1 fp16 test
+conv2d_1x1_fp16_exe = executable('conv2d_1x1_fp16', 'tests/conv2d_1x1_fp16.c', include_directories : incdir, link_with : lib, link_args : '-lm')
+test('conv2d 1x1 fp16 4x4x32->32', conv2d_1x1_fp16_exe, is_parallel : false, args : ['4','4','32','32'])
