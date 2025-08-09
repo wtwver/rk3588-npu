@@ -1,6 +1,6 @@
 project('rk3588-npu', 'c')
 incdir = include_directories('include')
-lib_src = ['src/npu_interface.c','src/npu_matmul.c']
+lib_src = ['src/npu_interface.c','src/npu_matmul.c','src/llama2_npu.c']
 lib = library('rk3588-npu',lib_src, include_directories : incdir)
 
 
