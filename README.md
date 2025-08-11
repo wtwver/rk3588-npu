@@ -24,7 +24,7 @@ To build :
 ```
 sudo apt install -y meson libdrm-dev
 
-mkdir build
+mkdir -p build
 meson build
 cd build
 ninja

@@ -37,6 +37,11 @@ void gen_matmul_task(uint64_t *ops, npu_cna_desc *cna_desc, npu_core_desc *core_
 
   uint32_t value;
 
+  printf("DEBUG: gen_matmul_task called\n");
+  printf("DEBUG: cna_desc->datain_channel=%u, cna_desc->weight_kernels=%u\n", 
+         cna_desc->datain_channel, cna_desc->weight_kernels);
+
+  printf("DEBUG: Writing ops[0] to ops[10]\n");
   ops[0] = NPUOP(OP_REG_DPU, 0xE, DPU_S_POINTER);
   value = ((cna_desc->proc_precision & 0x7) <<7) |  ((cna_desc->in_precision & 0x7)<<4) | 
     (cna_desc->conv_mode & 0xf);
@@ -60,6 +65,8 @@ void gen_matmul_task(uint64_t *ops, npu_cna_desc *cna_desc, npu_core_desc *core_
   value = ((cna_desc->weight_width & 0x1F) <<24) | ((cna_desc->weight_height & 0x1F) << 16) |
     (cna_desc->weight_kernels & 0x3FFF);
   ops[10] = NPUOP(OP_REG_CNA, value, CNA_WEIGHT_SIZE2);
+  
+  printf("DEBUG: Writing ops[11] to ops[20]\n");
   value = ((cna_desc->weight_bank & 0xF) << 4) | (cna_desc->data_bank & 0xF);
   ops[11] = NPUOP(OP_REG_CNA, value, CNA_CBUF_CON0);
   value = cna_desc->data_entries & 0x1FFF;
@@ -80,6 +87,8 @@ void gen_matmul_task(uint64_t *ops, npu_cna_desc *cna_desc, npu_core_desc *core_
   ops[19] = NPUOP(OP_REG_CNA, value, CNA_FC_CON1); 
   value = ((cna_desc->pad_left & 0xF) << 4) | (cna_desc->pad_top & 0xF);
   ops[20] = NPUOP(OP_REG_CNA, value, CNA_PAD_CON0);
+
+  printf("DEBUG: Writing ops[21] to ops[30]\n");
   ops[21] = NPUOP(OP_REG_CNA, cna_desc->feature_base_addr, CNA_FEATURE_DATA_ADDR);
   value = cna_desc->weight_offset & 0x1FFFF;
   ops[22] = NPUOP(OP_REG_CNA, value, CNA_FC_CON2);
@@ -96,6 +105,8 @@ void gen_matmul_task(uint64_t *ops, npu_cna_desc *cna_desc, npu_core_desc *core_
   ops[28] = NPUOP(OP_REG_CNA, 0x0, CNA_DCOMP_CTRL);
   ops[29] = NPUOP(OP_REG_CNA, 0x0, CNA_DCOMP_REGNUM);
   ops[30] = NPUOP(OP_REG_CNA, cna_desc->decompress_addr0, CNA_DCOMP_ADDR0);
+
+  printf("DEBUG: Writing ops[31] to ops[50]\n");
   ops[31] = NPUOP(OP_REG_CNA, 0x0, CNA_DCOMP_AMOUNT);
   ops[32] = NPUOP(OP_REG_CNA, 0x0, CNA_DCOMP_AMOUNT1);
   ops[33] = NPUOP(OP_REG_CNA, 0x0, CNA_DCOMP_AMOUNT2);
@@ -122,6 +133,8 @@ void gen_matmul_task(uint64_t *ops, npu_cna_desc *cna_desc, npu_core_desc *core_
   ops[51] = NPUOP(OP_REG_CORE, value, CORE_DATAOUT_SIZE_1);
   ops[52] = NPUOP(OP_REG_CORE, 0x0, CORE_CLIP_TRUNCATE);
   ops[53] = NPUOP(OP_REG_CORE, 0x0, CORE_3030);
+
+  printf("DEBUG: Writing ops[54] to ops[70]\n");
   value = ((dpu_desc->burst_len & 0xF) << 5) | ((dpu_desc->conv_mode & 0x3) <<3) |
     ((dpu_desc->output_mode & 0x3) <<1) | (dpu_desc->flying_mode & 0x1);
   ops[54] = NPUOP(OP_REG_DPU, value, DPU_FEATURE_MODE_CFG);
@@ -197,6 +210,11 @@ void gen_matmul_task(uint64_t *ops, npu_cna_desc *cna_desc, npu_core_desc *core_
   ops[105] = NPUOP(OP_REG_PC, 0x0, PC_REGISTER_AMOUNTS);
   ops[106] = NPUOP(OP_40, 0x0, 0x0);
   ops[107] = NPUOP(OP_ENABLE, (PC_ENABLE_DPU | PC_ENABLE_CNA | PC_ENABLE), PC_OPERATION_ENABLE);
+
+  printf("DEBUG: gen_matmul_task completed successfully\n");
+  printf("DEBUG: Total operations written: 108 (ops[0] to ops[107])\n");
+  printf("DEBUG: Expected regcfg_amount: 104\n");
+  printf("DEBUG: Mismatch: 108 - 104 = 4 operations extra\n");
 }
 
 /*
@@ -218,6 +236,9 @@ int gen_matmul_fp16(matmul_params_t *params) {
    unsigned int fd_banks;
    unsigned int weight_banks;
    int surf_stride;
+
+   // Add debug output
+   printf("DEBUG: gen_matmul_fp16 called with params: m=%d, k=%d, n=%d\n", params->m, params->k, params->n);
 
    cna_desc.conv_mode = direct_convolution;
    cna_desc.in_precision = precision_float16;
@@ -247,12 +268,28 @@ int gen_matmul_fp16(matmul_params_t *params) {
    fd_banks = ((fd_bytes % NPU_CBUF_BANK_SIZE) == 0) ? fd_banks : fd_banks +1;
    weight_banks = (cna_desc.weight_bytes / NPU_CBUF_BANK_SIZE);
    weight_banks = ((cna_desc.weight_bytes % NPU_CBUF_BANK_SIZE)==0) ? weight_banks : weight_banks + 1;
+   
+   // Add debug output for CBUF calculations
+   printf("DEBUG: CBUF calculations:\n");
+   printf("  fd_bytes=%u, NPU_CBUF_BANK_SIZE=%u\n", fd_bytes, NPU_CBUF_BANK_SIZE);
+   printf("  weight_bytes_per_kernel=%u\n", cna_desc.weight_bytes_per_kernel);
+   printf("  weight_bytes=%u\n", cna_desc.weight_bytes);
+   printf("  fd_banks calculation: %u / %u = %u, remainder %u\n", 
+          fd_bytes, NPU_CBUF_BANK_SIZE, fd_bytes / NPU_CBUF_BANK_SIZE, fd_bytes % NPU_CBUF_BANK_SIZE);
+   printf("  weight_banks calculation: %u / %u = %u, remainder %u\n", 
+          cna_desc.weight_bytes, NPU_CBUF_BANK_SIZE, cna_desc.weight_bytes / NPU_CBUF_BANK_SIZE, cna_desc.weight_bytes % NPU_CBUF_BANK_SIZE);
+   
    if ((fd_banks) > NPU_CBUF_BANKS-1) {
+     printf("DEBUG: ERROR: fd_banks (%u) > NPU_CBUF_BANKS-1 (%u), returning -1\n", fd_banks, NPU_CBUF_BANKS-1);
      return -1;
    } else {
        if (cna_desc.weight_bytes_per_kernel <= NPU_CBUF_BANK_SIZE) {
         weight_banks = NPU_CBUF_BANKS - fd_banks;
+        printf("DEBUG: weight_banks recalculated to %u\n", weight_banks);
+        printf("DEBUG: Total banks used: %u + %u = %u (max: %u)\n", fd_banks, weight_banks, fd_banks + weight_banks, NPU_CBUF_BANKS);
        } else {
+         printf("DEBUG: ERROR: weight_bytes_per_kernel (%u) > NPU_CBUF_BANK_SIZE (%u), returning -2\n", 
+                cna_desc.weight_bytes_per_kernel, NPU_CBUF_BANK_SIZE);
          return -2;
        }
    }
@@ -387,12 +424,22 @@ int gen_matmul_int8(matmul_params_t *params) {
    fd_banks = ((fd_bytes % NPU_CBUF_BANK_SIZE) == 0) ? fd_banks : fd_banks +1;
    weight_banks = (cna_desc.weight_bytes / NPU_CBUF_BANK_SIZE);
    weight_banks = ((cna_desc.weight_bytes % NPU_CBUF_BANK_SIZE)==0) ? weight_banks : weight_banks + 1;
+   
+   printf("DEBUG: int8 CBUF calculations:\n");
+   printf("  fd_bytes=%u, weight_bytes=%u\n", fd_bytes, cna_desc.weight_bytes);
+   printf("  fd_banks=%u, weight_banks=%u (available: %u)\n", 
+          fd_banks, weight_banks, NPU_CBUF_BANKS);
+   
    if ((fd_banks) > NPU_CBUF_BANKS-1) {
+     printf("DEBUG: ERROR: fd_banks (%u) > NPU_CBUF_BANKS-1 (%u), returning -1\n", fd_banks, NPU_CBUF_BANKS-1);
      return -1;
    } else {
        if (cna_desc.weight_bytes_per_kernel <= NPU_CBUF_BANK_SIZE) {
         weight_banks = NPU_CBUF_BANKS - fd_banks;
+        printf("DEBUG: weight_banks recalculated to %u\n", weight_banks);
        } else {
+         printf("DEBUG: ERROR: weight_bytes_per_kernel (%u) > NPU_CBUF_BANK_SIZE (%u), returning -2\n", 
+                cna_desc.weight_bytes_per_kernel, NPU_CBUF_BANK_SIZE);
          return -2;
        }
    }
