@@ -35,6 +35,7 @@ typedef struct npu_dpu_desc {
  uint32_t dst_surf_stride;  // 0x4024
  uint16_t width;            // 0x4030
  uint16_t height;           // 0x4034
+ uint16_t notch_addr;       // 0x4038
  uint16_t channel;          // 0x403C
  uint8_t bs_bypass;         // 0x4040
  uint8_t bs_alu_bypass;     // 0x4040

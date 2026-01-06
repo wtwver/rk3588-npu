@@ -5,6 +5,7 @@
 
 void* mem_allocate(int fd, size_t size, uint64_t *dma_addr, uint64_t *obj, uint32_t flags, uint32_t *handle);
 void mem_destroy(int fd, uint32_t handle, uint64_t obj_addr);
+int create_flink_name(int fd, uint32_t handle, uint32_t *flink_name, const char *name);
 
 int npu_open();
 int npu_close(int fd);

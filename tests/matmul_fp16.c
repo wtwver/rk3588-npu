@@ -69,6 +69,9 @@ float rand_float() {
   return rand()/(float)RAND_MAX;
 }
 
+void breakpoint() {};
+
+
 int main(int argc, char **argv) {
 
   unsigned int M=0;
@@ -86,23 +89,33 @@ int main(int argc, char **argv) {
   K = atoi(argv[2]);
   N = atoi(argv[3]);
 
-  if ((M<=0) || (M>MAX_M) | (((M%4)!=0) && (M!=1))) {
-    printf("M [%d] is out of range or not a multiple of 4 \n",M);
-    return -1;
-  }
+  // if ((M<=0) || (M>MAX_M) | (((M%4)!=0) && (M!=1))) {
+  //   printf("M [%d] is out of range or not a multiple of 4 \n",M);
+  //   return -1;
+  // }
 
-  if ((K<=0) || (K>MAX_K) || ((K%32) != 0)) {
-    printf("K [%d] is out of range or not a multiple of 32\n",K);
-    return -1;
-  }
+  // if ((K<=0) || (K>MAX_K) || ((K%32) != 0)) {
+  //   printf("K [%d] is out of range or not a multiple of 32\n",K);
+  //   return -1;
+  // }
 
-  if ((N<=0) || (N>MAX_N) || ((N%16) != 0)) {
-    printf("N [%d] is out of range or not a multiple of 16\n",N);
-    return -1;
-  }
+  // if ((N<=0) || (N>MAX_N) || ((N%16) != 0)) {
+  //   printf("N [%d] is out of range or not a multiple of 16\n",N);
+  //   return -1;
+  // }
 
   // Open DRI called "rknpu"
   int fd = npu_open();
+  int align_in = ((K + 31) / 32) * 32;
+  if (align_in < 32) align_in = 32;
+  int align_out = ((N + 31) / 32) * 32;
+  if (align_out < 32) align_out = 32;
+  size_t input_elems = (size_t)align_in * (size_t)M;
+  size_t weight_elems = (size_t)align_in * (size_t)align_out;
+  size_t output_elems = (size_t)align_out * (size_t)M;
+  size_t input_bytes = input_elems * sizeof(_Float16);
+  size_t weight_bytes = weight_elems * sizeof(_Float16);
+  size_t output_bytes = output_elems * sizeof(float);
 
   uint64_t regcmd_dma, regcmd_obj;
   uint32_t regcmd_handle;
@@ -114,20 +127,33 @@ int main(int argc, char **argv) {
 
   uint64_t input_dma, input_obj;
   uint32_t input_handle;
+  // void *input = mem_allocate(fd, input_bytes, &input_dma, &input_obj, 0, &input_handle);
   void *input = mem_allocate(fd, M*K*sizeof(__fp16), &input_dma, &input_obj, 0, &input_handle);
 
   uint64_t weights_dma, weights_obj;
   uint32_t weights_handle;
+  // void *weights = mem_allocate(fd, weight_bytes, &weights_dma, &weights_obj, 0, &weights_handle);
   void *weights = mem_allocate(fd, N*K*sizeof(__fp16), &weights_dma, &weights_obj, 0, &weights_handle);
 
   uint64_t output_dma, output_obj;
   uint32_t output_handle;
+  // void *output = mem_allocate(fd, output_bytes, &output_dma, &output_obj, 0, &output_handle);
   void *output = mem_allocate(fd, M*N*sizeof(float), &output_dma, &output_obj, 0, &output_handle);
 
   printf("input dma is %lx, output dma is %lx, weights dma is %lx\n", input_dma, output_dma, weights_dma);
   if ((regcmd == NULL) || (tasks == NULL) || (input == NULL) || (weights == NULL) || (output == NULL)) {
     printf("Failed to allocate memory \n");
     exit(1);
+  }
+
+  uint32_t tasks_flink, regcmd_flink, input_flink, weights_flink, output_flink;
+  if (create_flink_name(fd, tasks_handle, &tasks_flink, "tasks") < 0 ||
+      create_flink_name(fd, regcmd_handle, &regcmd_flink, "regcmd") < 0 ||
+      create_flink_name(fd, input_handle, &input_flink, "input") < 0 ||
+      create_flink_name(fd, weights_handle, &weights_flink, "weights") < 0 ||
+      create_flink_name(fd, output_handle, &output_flink, "output") < 0) {
+    printf("Failed to create flink name for one or more GEM objects\n");
+    goto cleanup;
   }
 
   // Reset the NPU
@@ -163,6 +189,9 @@ int main(int argc, char **argv) {
   memset((void *)input,0,M*K*sizeof(_Float16));
   memset((void *)weights,0,K*N*sizeof(_Float16));
   memset((void *)output,0,M*N*sizeof(float));
+  // memset((void *)input, 0, input_bytes);
+  // memset((void *)weights, 0, weight_bytes);
+  // memset((void *)output, 0, output_bytes);
 
   srand(time(NULL));
 
@@ -180,16 +209,18 @@ int main(int argc, char **argv) {
 
   _Float16 *weights_fp16 = weights;
    
-  for(int n=1;n<=N;n++) {
-    for(int k=1;k<=K;k++) {
+  for (int n = 1; n <= N; n++) {
+    for (int k = 1; k <= K; k++) {
+      // weights_fp16[weight_fp16(align_in, n, k)] = matrixB[((n-1)*K)+(k-1)];
       weights_fp16[weight_fp16(K,n,k)]= matrixB[((n-1)*K)+(k-1)];
     }
   }
  
   _Float16 *feature_data_fp16 = (_Float16*) input;
 
-  for (int m=1;m<=M;m++) {
-    for (int k=1;k<=K;k++) {
+  for (int m = 1; m <= M; m++) {
+    for (int k = 1; k <= K; k++) {
+      // feature_data_fp16[feature_data(align_in, M, 1, align_in, k, m, 1)] = matrixA[((m-1)*K)+(k-1)];
       feature_data_fp16[feature_data(K,M,1,8,k,m,1)]= matrixA[((m-1)*K)+(k-1)];
     }
   }
@@ -216,6 +247,8 @@ int main(int argc, char **argv) {
       }, { 1, 0}, {2, 0}, {0,0}, {0,0}
     },
   };
+  breakpoint();
+  
   ret = ioctl(fd, DRM_IOCTL_RKNPU_SUBMIT, &submit);
   printf("RKNPU_SUBMIT returned %d\n", ret);
   if (ret <0) {
@@ -227,6 +260,7 @@ int main(int argc, char **argv) {
   for (int m=1;m<=M;m++) {
     for (int n=1;n<N;n++) {
       float actual = output_data[feature_data(N, M, 1, 4, n, m, 1)];
+      // float actual = output_data[feature_data(align_out, M, 1, align_out, n, m, 1)];
       float expected = expected_result[((m-1)*N)+(n-1)];
       int32_t *e, *a;
       e = (int32_t *)&expected;
@@ -245,9 +279,9 @@ int main(int argc, char **argv) {
 cleanup:
   munmap(regcmd,1024);
   munmap(tasks,1024);
-  munmap(input,M*K*sizeof(_Float16));
-  munmap(weights,N*K*sizeof(_Float16));
-  munmap(output,M*N*sizeof(float));
+  munmap(input, input_bytes);
+  munmap(weights, weight_bytes);
+  munmap(output, output_bytes);
 
   mem_destroy(fd, regcmd_handle, regcmd_obj);
   mem_destroy(fd, tasks_handle, tasks_obj );

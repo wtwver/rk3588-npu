@@ -28,6 +28,7 @@ typedef struct npu_cna_desc {
   uint8_t conv_mode;          // 0x100C
   uint8_t in_precision;       // 0x100C
   uint8_t proc_precision;     // 0x100C
+  uint8_t group_line_off;     // 0x100C
   uint8_t kernel_groups;      // 0x1010
   uint16_t feature_grains;    // 0x1010
   uint8_t conv_y_stride;      // 0x1014

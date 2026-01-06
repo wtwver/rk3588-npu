@@ -26,9 +26,64 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <stdarg.h>
+#include <stdbool.h>
 
 #include "rknpu-ioctl.h"
 #include "npu_hw.h"
+
+typedef struct {
+  uint32_t handle;
+  uint64_t dma_addr;
+} HandleDmaEntry;
+
+#define HANDLE_DMA_CAPACITY 64
+static HandleDmaEntry handle_dma_map[HANDLE_DMA_CAPACITY];
+static size_t handle_dma_count = 0;
+
+static void reset_rknpu_info_file(void) {
+  FILE *f = fopen("/tmp/rknpu_info", "w");
+  if (f) fclose(f);
+}
+
+static void log_rknpu_info(const char *fmt, ...) {
+  FILE *f = fopen("/tmp/rknpu_info", "a");
+  if (!f) return;
+  va_list args;
+  va_start(args, fmt);
+  vfprintf(f, fmt, args);
+  va_end(args);
+  fclose(f);
+}
+
+static void reset_handle_dma_map(void) {
+  handle_dma_count = 0;
+  reset_rknpu_info_file();
+}
+
+static void store_handle_dma(uint32_t handle, uint64_t dma_addr) {
+  for (size_t i = 0; i < handle_dma_count; i++) {
+    if (handle_dma_map[i].handle == handle) {
+      handle_dma_map[i].dma_addr = dma_addr;
+      return;
+    }
+  }
+  if (handle_dma_count < HANDLE_DMA_CAPACITY) {
+    handle_dma_map[handle_dma_count].handle = handle;
+    handle_dma_map[handle_dma_count].dma_addr = dma_addr;
+    handle_dma_count++;
+  }
+}
+
+static bool find_dma_for_handle(uint32_t handle, uint64_t *dma_addr) {
+  for (size_t i = 0; i < handle_dma_count; i++) {
+    if (handle_dma_map[i].handle == handle) {
+      if (dma_addr) *dma_addr = handle_dma_map[i].dma_addr;
+      return true;
+    }
+  }
+  return false;
+}
 
 void* mem_allocate(int fd, size_t size, uint64_t *dma_addr, uint64_t *obj, uint32_t flags, uint32_t *handle) {
 
@@ -56,6 +111,7 @@ void* mem_allocate(int fd, size_t size, uint64_t *dma_addr, uint64_t *obj, uint3
   *dma_addr = mem_create.dma_addr;
   *obj = mem_create.obj_addr;
   *handle = mem_create.handle;
+  store_handle_dma(mem_create.handle, mem_create.dma_addr);
   return map;
 }
 
@@ -71,6 +127,30 @@ void mem_destroy(int fd, uint32_t handle, uint64_t obj_addr) {
   if (ret <0) {
     printf("RKNPU_MEM_DESTROY failed %d\n",ret);
   }
+}
+
+int create_flink_name(int fd, uint32_t handle, uint32_t *flink_name, const char *name) {
+  struct drm_gem_flink flink_req = {
+    .handle = handle,
+    .name = 0
+  };
+
+  int ret = ioctl(fd, DRM_IOCTL_GEM_FLINK, &flink_req);
+  if (ret < 0) {
+    printf("ERROR: DRM_IOCTL_GEM_FLINK failed: %s (%d)\n", strerror(errno), errno);
+    return ret;
+  }
+
+  *flink_name = flink_req.name;
+  printf("SUCCESS: Created flink name %u for handle %u (%s)\n", *flink_name, handle, name ? name : "unknown");
+  uint64_t dma_addr = 0;
+  if (find_dma_for_handle(handle, &dma_addr)) {
+    printf("dma addr: 0x%llx gem name: %u (handle %u)\n",
+      (unsigned long long)dma_addr, *flink_name, handle);
+    log_rknpu_info("FLINK handle=%u flink=%u dma=0x%llx\n",
+      handle, *flink_name, (unsigned long long)dma_addr);
+  }
+  return 0;
 }
 
 int npu_open() {
@@ -103,6 +183,7 @@ int npu_open() {
     return ret;
   }
   printf("drm name is %s - %s - %s\n", dv.name, dv.date, dv.desc);
+  reset_handle_dma_map();
   return fd;
 }
 

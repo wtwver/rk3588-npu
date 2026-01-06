@@ -62,6 +62,9 @@ int gen_conv2d_fp16(conv2d_params_t *params) {
   npu_cna_desc cna_desc;
   npu_core_desc core_desc;
   npu_dpu_desc dpu_desc;
+  memset(&cna_desc, 0, sizeof(cna_desc));
+  memset(&core_desc, 0, sizeof(core_desc));
+  memset(&dpu_desc, 0, sizeof(dpu_desc));
 
   // Set CNA for 2D convolution
   cna_desc.conv_mode = direct_convolution;
@@ -187,6 +190,9 @@ int gen_conv2d_int8(conv2d_params_t *params) {
   npu_cna_desc cna_desc;
   npu_core_desc core_desc;
   npu_dpu_desc dpu_desc;
+  memset(&cna_desc, 0, sizeof(cna_desc));
+  memset(&core_desc, 0, sizeof(core_desc));
+  memset(&dpu_desc, 0, sizeof(dpu_desc));
 
   cna_desc.conv_mode = direct_convolution;
   cna_desc.in_precision = precision_int8;
