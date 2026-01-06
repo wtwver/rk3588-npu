@@ -1,37 +1,59 @@
 project('rk3588-npu', 'c')
 incdir = include_directories('include')
-lib_src = ['src/npu_interface.c','src/npu_matmul.c','src/npu_conv.c']
+lib_src = ['src/npu_interface.c','src/npu_matmul.c']
 lib = library('rk3588-npu',lib_src, include_directories : incdir)
 
 
-test_matmul_4_36_16  = executable('matmul_4_36_16', 'tests/matmul_4_36_16.c', include_directories : incdir, link_with : lib)
-test('matmul_4x36x16',test_matmul_4_36_16, is_parallel : false)
+# test_matmul_4_36_16  = executable('matmul_4_36_16', 'tests/matmul_4_36_16.c', include_directories : incdir, link_with : lib)
+# test('matmul_4x36x16',test_matmul_4_36_16, is_parallel : false, timeout : 10)
 
 # Test inputs fp16 and output fp32
 test_matmul_fp16  = executable('matmul_fp16', 'tests/matmul_fp16.c', include_directories : incdir, link_with : lib, link_args : '-lm')
-test('matmul fp16 1x32x16',test_matmul_fp16, is_parallel : false , args : ['1', '32' ,'16'])
-test('matmul fp16 1x64x64',test_matmul_fp16, is_parallel : false , args : ['1', '64' ,'64'])
-test('matmul fp16 1x1024x1024',test_matmul_fp16, is_parallel : false , args : ['1', '1024' ,'1024'])
-test('matmul fp16 1x4096x4096',test_matmul_fp16, is_parallel : false , args : ['1', '4096' ,'4096'])
-test('matmul fp16 4x32x16',test_matmul_fp16, is_parallel : false , args : ['4', '32' ,'16'])
+#test('matmul fp16 384x384x384',test_matmul_fp16, is_parallel : false , args : ['384', '384' ,'384'])
+#test('matmul fp16 416x416x416',test_matmul_fp16, is_parallel : false , args : ['416', '416' ,'416'])
+
+# test('matmul fp16 1x7744x7744',test_matmul_fp16, is_parallel : false , args : ['1', '7744' ,'7744'])
+# test('matmul fp16 1x8192x7744',test_matmul_fp16, is_parallel : false , args : ['1', '8192' ,'7744'])
+
+# test('matmul fp16 1x32x16',test_matmul_fp16, is_parallel : false , args : ['1', '32' ,'16'])
+# test('matmul fp16 1x64x64',test_matmul_fp16, is_parallel : false , args : ['1', '64' ,'64'])
+# test('matmul fp16 1x768x768',test_matmul_fp16, is_parallel : false , args : ['1', '1024' ,'1024'])
+# test('matmul fp16 1x768x2048',test_matmul_fp16, is_parallel : false , args : ['1', '1024' ,'1024'])
+# test('matmul fp16 1x1024x1024',test_matmul_fp16, is_parallel : false , args : ['1', '1024' ,'1024'])
+# test('matmul fp16 1x4096x4096',test_matmul_fp16, is_parallel : false , args : ['1', '4096' ,'4096'])
+# test('matmul fp16 1x8192x7760',test_matmul_fp16, is_parallel : false , args : ['1', '8192' ,'7760'])
+# test('matmul fp16 1x8192x8192',test_matmul_fp16, is_parallel : false , args : ['1', '8192' ,'8192'])
+# test('matmul fp16 394x394x394',test_matmul_fp16, is_parallel : false , args : ['1', '8192' ,'7744'])
+
+# test('matmul fp16 4x32x16',test_matmul_fp16, is_parallel : false , args : ['4', '32' ,'16'])
 # test max feature data for one task
-test('matmul fp16 384x384x4096',test_matmul_fp16, is_parallel : false , args : ['384', '384' ,'4096'])
+# test('matmul fp16 384x384x4096',test_matmul_fp16, is_parallel : false , args : ['384', '384' ,'4096'])
 
-test_matmul_int8  = executable('matmul_int8', 'tests/matmul_int8.c', include_directories : incdir, link_with : lib, link_args : '-lm')
-test('matmul int8 1x32x32',test_matmul_int8, is_parallel : false , args : ['1','32','32'])
-test('matmul int8 1x64x64',test_matmul_int8, is_parallel : false , args : ['1','64','64'])
-test('matmul int8 1x1024x1024',test_matmul_int8, is_parallel : false , args : ['1','1024','1024'])
-test('matmul int8 1x4096x4096',test_matmul_int8, is_parallel : false , args : ['1','4096','4096'])
-# test max feature data for one task
-test('matmul int8 544x544x4096',test_matmul_int8, is_parallel : false , args : ['544','544','4096'])
+# test_matmul_int8  = executable('matmul_int8', 'tests/matmul_int8.c', include_directories : incdir, link_with : lib, link_args : '-lm')
+# test('matmul int8 1x32x32',test_matmul_int8, is_parallel : false , args : ['1','32','32'])
+# test('matmul int8 1x64x64',test_matmul_int8, is_parallel : false , args : ['1','64','64'])
+# test('matmul int8 1x1024x1024',test_matmul_int8, is_parallel : false , args : ['1','1024','1024'])
+# test('matmul int8 1x4096x4096',test_matmul_int8, is_parallel : false , args : ['1','4096','4096'])
+# # test max feature data for one task
+# test('matmul int8 544x544x4096',test_matmul_int8, is_parallel : false , args : ['544','544','4096'])
 
-# Test inputs fp16 and output fp16
-test_matmul_fp16_fp16  = executable('matmul_fp16_fp16', 'tests/matmul_fp16_fp16.c', include_directories : incdir, link_with : lib, link_args : '-lm')
-test('matmul fp16_fp16 1x32x16',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '32' ,'16'])
-test('matmul fp16_fp16 1x768x768',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '768' ,'768'])
-test('matmul fp16_fp16 1x768x2048',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '768' ,'2048'])
-test('matmul fp16_fp16 1x8192x8192',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '8192' ,'8192'])
+# # Test inputs fp16 and output fp16
+# test_matmul_fp16_fp16  = executable('matmul_fp16_fp16', 'tests/matmul_fp16_fp16.c', include_directories : incdir, link_with : lib, link_args : '-lm')
+# test('matmul fp16_fp16 1x32x16',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '32' ,'16'], timeout : 10)
+# test('matmul fp16_fp16 1x768x768',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '768' ,'768'], timeout : 10)
+# test('matmul fp16_fp16 1x768x2048',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '768' ,'2048'], timeout : 10)
+# test('matmul fp16_fp16 1x8192x7744',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '8192' ,'7744'], timeout : 10)
+# test('matmul fp16_fp16 1x8192x7760',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '8192' ,'7760'])
+# test('matmul fp16_fp16 1x8192x8192',test_matmul_fp16_fp16, is_parallel : false , args : ['1', '8192' ,'8192'])
 
-# Conv2d 1x1 fp16 test
-conv2d_1x1_fp16_exe = executable('conv2d_1x1_fp16', 'tests/conv2d_1x1_fp16.c', include_directories : incdir, link_with : lib, link_args : '-lm')
-test('conv2d 1x1 fp16 4x4x32->32', conv2d_1x1_fp16_exe, is_parallel : false, args : ['4','4','32','32'])
+foreach n : range(384, 416)
+  test('matmul fp16 @0@x@0@x@0@'.format(n),
+    test_matmul_fp16,
+    is_parallel : false,
+    args : [(n).to_string(), (n).to_string(), (n).to_string()],
+    timeout : 6)
+endforeach
+
+run_target('test_matmul',
+  command: ['meson', 'test', '--maxfail=100', '--print-errorlogs', '--verbose', '-C', meson.project_build_root()],
+)

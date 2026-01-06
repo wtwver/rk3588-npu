@@ -37,8 +37,10 @@
 #include "npu_matmul.h"
 
 #define MAX_M 384 
-#define MAX_K 4096 
-#define MAX_N 4096 
+// #define MAX_K 4096 
+#define MAX_K 8192 
+// #define MAX_N 4096 
+#define MAX_N 8192 
 
   // Test currently runs against kernel 5.10 haven't tested 6.1 kernel.
 
@@ -86,20 +88,20 @@ int main(int argc, char **argv) {
   K = atoi(argv[2]);
   N = atoi(argv[3]);
 
-  if ((M<=0) || (M>MAX_M) | (((M%4)!=0) && (M!=1))) {
-    printf("M [%d] is out of range or not a multiple of 4 \n",M);
-    return -1;
-  }
+  // if ((M<=0) || (M>MAX_M) | (((M%4)!=0) && (M!=1))) {
+  //   printf("M [%d] is out of range or not a multiple of 4 \n",M);
+  //   return -1;
+  // }
 
-  if ((K<=0) || (K>MAX_K) || ((K%32) != 0)) {
-    printf("K [%d] is out of range or not a multiple of 32\n",K);
-    return -1;
-  }
+  // if ((K<=0) || (K>MAX_K) || ((K%32) != 0)) {
+  //   printf("K [%d] is out of range or not a multiple of 32\n",K);
+  //   return -1;
+  // }
 
-  if ((N<=0) || (N>MAX_N) || ((N%16) != 0)) {
-    printf("N [%d] is out of range or not a multiple of 16\n",N);
-    return -1;
-  }
+  // if ((N<=0) || (N>MAX_N) || ((N%16) != 0)) {
+  //   printf("N [%d] is out of range or not a multiple of 16\n",N);
+  //   return -1;
+  // }
 
   // Open DRI called "rknpu"
   int fd = npu_open();

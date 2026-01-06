@@ -1,7 +1,7 @@
 # Know issues
 ```
 ninja -C build test
-./matmul_fp16_fp16 1 8192 $((16*485))
+build/matmul_fp16_fp16 1 8192 $((16*485))
 Segmentation fault
 ```
 
